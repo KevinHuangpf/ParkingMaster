@@ -1,0 +1,42 @@
+# ParkingMaster
+ParkingMaster for Intelligent Demonstration System
+
+数据格式定义
+1. 统一格式定义  
+Preamble	 Name 	Split1	                Payload	        Split2	Parity	Tail
+#         <CCC>	   *	<Field 1>,<Field 2>,…, <Field N>	*	      <HH>	  <CR><LR>
+
+Preamble：消息的前导符，固定为’#’，标识消息的开始；
+Name：消息名称，由3～5个字符组成，不得小于3个，不得超过5个，用于标识不同的消息；
+Split1：Name和Paylaod之间的分割符，固定为’*’ ；
+Payload：消息内容，有多个字段（field）组成，不同的字段用’,’分割；
+Split2：Payload和Parity之间的分割符，固定为’*’;
+Parity：校验码，对’#’和最后一个 ’*’（包含#与*）之间的所有字符执行异或运算，
+Tail：消息结束符，以<CR><LF>两个字符结束，<CR>是回车、<LF>是换行。
+
+例如
+#PAK*1,1,22,34,2019-1-3 12:32:32,0*49<CR><LF>
+（真实数据发送是回车换行，不是<CR><LF>添加到后面）
+  
+2. 业务消息——车位数据消息PAK的定义
+#  <CCC>	 *	<Field 1>,<Field 2>,…, <Field N>	*	 <HH>	<CR><LR>
+解释规范：
+  #：前导码
+  <CCC>    ：消息名称，车位数据定义为"PAK"
+  *        ：分隔符
+  <Field 1>：区域编号
+  <Field 2>：车场编号
+  <Field 3>：车位编号
+  <Field 4>：用户编号
+  <Field 5>：消息时间，"yyyy-MM-dd HH:mm:ss"格式
+  <Field 6>：车位指示位，0表示无占用，1表示被占用
+  *        ：分隔符
+  <HH>     ：异或校验和，#...* 字段的异或校验值
+  <CR><LR> ：回车换行
+    
+ 消息举例：
+ #PAK*1,1,22,34,2019-1-3 12:32:32,0*49<CR><LF>
+
+3. 业务消息——车场数据消息LOT，待定义
+#LOT*4,2,2.3,700,535,2019-1-3 12:32:32,1*49<CR><LF>
+  
