@@ -4,7 +4,7 @@ ParkingMaster for Intelligent Demonstration System
 数据格式定义
 1. 统一格式定义  
 Preamble	 Name 	Split1	                Payload	        Split2	Parity	Tail
-##         <CCC>	   *	<Field 1>,<Field 2>,…, <Field N>	*	      <HH>	  <CR><LR>
+#         <CCC>	   *	<Field 1>,<Field 2>,…, <Field N>	*	      <HH>	  <CR><LR>
 
 Preamble：消息的前导符，固定为’#’，标识消息的开始；
 Name：消息名称，由3～5个字符组成，不得小于3个，不得超过5个，用于标识不同的消息；
@@ -38,5 +38,5 @@ Tail：消息结束符，以<CR><LF>两个字符结束，<CR>是回车、<LF>是
  #PAK*1,1,22,34,2019-1-3 12:32:32,0*49<CR><LF>
 
 3. 业务消息——车场数据消息LOT，待定义
-
+#LOT*4,2,2.3,700,535,2019-1-3 12:32:32,1*49<CR><LF>
   
