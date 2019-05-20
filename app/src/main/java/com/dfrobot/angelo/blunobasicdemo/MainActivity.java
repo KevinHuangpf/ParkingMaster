@@ -279,6 +279,8 @@ public class MainActivity extends BlunoLibrary {
 
                 // TODO: 2019/5/18 可在此添加方法写停车场的初始化
 
+
+
             }
             System.out.println("<信息结束>");
             isMSGOK = false;
@@ -352,7 +354,7 @@ public class MainActivity extends BlunoLibrary {
                         int parkingspaceAvailable = parkinglot.getSpaceAvailable();
                         parkingspaceAvailable--;
                         parkinglot.setSpaceAvailable(parkingspaceAvailable);
-                        DBService.getDbService().updateParkinglot(parkinglot);
+                        DBService.getDbService().updateParkinglotByPAK(parkinglot);
                     }
                 }else {
                     // 车位非新建，更新或删除操作
@@ -376,7 +378,7 @@ public class MainActivity extends BlunoLibrary {
                                 int parkingspaceAvailable = parkinglot.getSpaceAvailable();
                                 parkingspaceAvailable--;
                                 parkinglot.setSpaceAvailable(parkingspaceAvailable);
-                                DBService.getDbService().updateParkinglot(parkinglot);
+                                DBService.getDbService().updateParkinglotByPAK(parkinglot);
                             }
                         }
                     }
@@ -393,7 +395,7 @@ public class MainActivity extends BlunoLibrary {
                                 int parkingspaceAvailable = parkinglot.getSpaceAvailable();
                                 parkingspaceAvailable++;
                                 parkinglot.setSpaceAvailable(parkingspaceAvailable);
-                                DBService.getDbService().updateParkinglot(parkinglot);
+                                DBService.getDbService().updateParkinglotByPAK(parkinglot);
                             }
                         }
                     }
@@ -406,5 +408,6 @@ public class MainActivity extends BlunoLibrary {
 
 
     // TODO: 2019/5/20 添加车位数据初始化内容
+
 
 }

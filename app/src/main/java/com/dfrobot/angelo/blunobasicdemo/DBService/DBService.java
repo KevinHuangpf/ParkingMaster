@@ -47,7 +47,7 @@ public class DBService {
         //结果存放集合
         Parkinglot parkinglot = new Parkinglot();
         //MySQL 语句
-        String sql="select * from parkinglot where id ="+parkinglotId+" and zone_id = "+zoneId;
+        String sql="select * from parkinglot where parkinglot_id ="+parkinglotId+" and zone_id = "+zoneId;
         //获取链接数据库对象
         conn= DBInitialize.getConn();
         try {
@@ -57,7 +57,7 @@ public class DBService {
                     rs= ps.executeQuery();
                     if(rs!=null){
                         while(rs.next()){
-                            parkinglot.setId(rs.getInt("id"));
+                            parkinglot.setId(rs.getInt("parkinglot_id"));
                             parkinglot.setZoneId(rs.getInt("zone_id"));
                             parkinglot.setFee(rs.getDouble("fee"));
                             parkinglot.setSpaceTotal(rs.getInt("parkingspace_total"));
@@ -78,9 +78,9 @@ public class DBService {
      * @param
      * @return
      */
-    public void updateParkinglot(Parkinglot parkinglot){
+    public void updateParkinglotByPAK(Parkinglot parkinglot){
         //MySQL 语句
-        String sql = "update parkinglot set parkingspace_available=?, gmt_modified=? where id="+parkinglot.getId()+" and zone_id="+parkinglot.getZoneId();
+        String sql = "update parkinglot set parkingspace_available=?, gmt_modified=? where parkinglot_id="+parkinglot.getId()+" and zone_id="+parkinglot.getZoneId();
         //获取链接数据库对象
         conn= DBInitialize.getConn();
         try {
@@ -205,5 +205,8 @@ public class DBService {
         }
         DBInitialize.closeAll(conn,ps,rs);
     }
+
+
+
 
 }
