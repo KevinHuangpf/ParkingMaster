@@ -11,8 +11,8 @@ public class DBInitialize {
 
     private static String driver = "com.mysql.jdbc.Driver";
     private static String url = "jdbc:mysql://39.106.80.63:3306/vehicle_database?characterEncoding=utf8";//MYSQL数据库连接Url
-    private static String user = "aliyun";//用户名
-    private static String password = "mysql";//密码
+    private static String user = "";//用户名
+    private static String password = "";//密码
 /*
     db.driverClassName=com.mysql.jdbc.Driver
     db.url=
