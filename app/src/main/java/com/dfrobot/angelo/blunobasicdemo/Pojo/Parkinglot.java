@@ -5,7 +5,12 @@ import java.util.Date;
 
 public class Parkinglot {
 
+
     private Integer id;
+
+
+
+    private Integer parkinglotId;
     private Integer zoneId;
     private  Double fee;
     private Integer spaceTotal;
@@ -14,6 +19,13 @@ public class Parkinglot {
     private Date createTime;
     private Date modifiedTime;
 
+    public Integer getParkinglotId() {
+        return parkinglotId;
+    }
+
+    public void setParkinglotId(Integer parkinglotId) {
+        this.parkinglotId = parkinglotId;
+    }
 
     public Integer getId() {
         return id;
@@ -70,4 +82,7 @@ public class Parkinglot {
     public void setModifiedTime(Date modifiedTime) {
         this.modifiedTime = modifiedTime;
     }
+
+
+
 }

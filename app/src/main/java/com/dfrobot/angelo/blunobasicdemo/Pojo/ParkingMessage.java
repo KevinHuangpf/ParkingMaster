@@ -8,8 +8,38 @@ public class ParkingMessage {
     Integer parkinglotId;
     Integer parkingSpaceId ;
     Integer userId ;
+    Double fee;
+    Integer spaceTotal;
+    Integer spaceAvailable;
+
     Date msgTime;
     Integer status;
+
+    public Double getFee() {
+        return fee;
+    }
+
+    public void setFee(Double fee) {
+        this.fee = fee;
+    }
+
+    public Integer getSpaceTotal() {
+        return spaceTotal;
+    }
+
+    public void setSpaceTotal(Integer spaceTotal) {
+        this.spaceTotal = spaceTotal;
+    }
+
+    public Integer getSpaceAvailable() {
+        return spaceAvailable;
+    }
+
+    public void setSpaceAvailable(Integer spaceAvailable) {
+        this.spaceAvailable = spaceAvailable;
+    }
+
+
 
     public Integer getZoneId() {
         return zoneId;

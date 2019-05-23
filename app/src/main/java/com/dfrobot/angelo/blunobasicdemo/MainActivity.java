@@ -11,6 +11,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.dfrobot.angelo.blunobasicdemo.DBService.DBInitialize;
 import com.dfrobot.angelo.blunobasicdemo.DBService.DBService;
 import com.dfrobot.angelo.blunobasicdemo.Pojo.*;
 import com.mysql.jdbc.StringUtils;
@@ -275,9 +276,13 @@ public class MainActivity extends BlunoLibrary {
                 // PAK业务消息处理
                 if (nameMSG.equals("PAK")) {
                     PAK(StringMSG1);
+
                 }
 
                 // TODO: 2019/5/18 可在此添加方法写停车场的初始化
+                if(nameMSG.equals("LOT")){
+                    LOT(StringMSG1);
+                }
 
 
 
@@ -288,7 +293,10 @@ public class MainActivity extends BlunoLibrary {
         flag1 = false;
     }
 
-    
+
+
+
+
     /**
      * 车位状态数据处理
      * @param StringMSG1
@@ -354,7 +362,7 @@ public class MainActivity extends BlunoLibrary {
                         int parkingspaceAvailable = parkinglot.getSpaceAvailable();
                         parkingspaceAvailable--;
                         parkinglot.setSpaceAvailable(parkingspaceAvailable);
-                        DBService.getDbService().updateParkinglotByPAK(parkinglot);
+                        DBService.getDbService().updateParkinglot(parkinglot);
                     }
                 }else {
                     // 车位非新建，更新或删除操作
@@ -378,7 +386,7 @@ public class MainActivity extends BlunoLibrary {
                                 int parkingspaceAvailable = parkinglot.getSpaceAvailable();
                                 parkingspaceAvailable--;
                                 parkinglot.setSpaceAvailable(parkingspaceAvailable);
-                                DBService.getDbService().updateParkinglotByPAK(parkinglot);
+                                DBService.getDbService().updateParkinglot(parkinglot);
                             }
                         }
                     }
@@ -395,19 +403,80 @@ public class MainActivity extends BlunoLibrary {
                                 int parkingspaceAvailable = parkinglot.getSpaceAvailable();
                                 parkingspaceAvailable++;
                                 parkinglot.setSpaceAvailable(parkingspaceAvailable);
-                                DBService.getDbService().updateParkinglotByPAK(parkinglot);
+                                DBService.getDbService().updateParkinglot(parkinglot);
                             }
                         }
                     }
 
 
                 }
+
+
             }
         }).start();
     }
+    
 
+    /**
+     * 车场状态数据处理
+     * @param StringMSG1
+     */
+    private void LOT(String[] StringMSG1){
+        // Payload提取
+        String[] payload = StringMSG1[1].split(",");
 
-    // TODO: 2019/5/20 添加车位数据初始化内容
+        // 核对payload在业务LOT的完整性
+        boolean isPayloadSizeRight = payload.length==6; //是否是6个payload值
 
+        boolean nullInPayload = false; //是否含有空值
+        for(String payloadItem:payload){
+            if(StringUtils.isNullOrEmpty(payloadItem)){
+                nullInPayload=true;
+                break;
+            }
+        }
+        // payload验证失败返回
+        if((!isPayloadSizeRight)||nullInPayload){
+            Toast.makeText(MainActivity.this, "Payload in LOT verification failed!", Toast.LENGTH_LONG).show();
+            return;
+        }
+        // parkingMessage对象并赋值
+        final ParkingMessage  parkingMessage = new ParkingMessage();
+        parkingMessage.setZoneId(Integer.valueOf(payload[0]));
+        parkingMessage.setParkinglotId(Integer.valueOf(payload[1]));
+        parkingMessage.setFee(Double.valueOf(payload[2]));
+        parkingMessage.setSpaceTotal(Integer.valueOf(payload[3]));
+        parkingMessage.setSpaceAvailable(Integer.valueOf(payload[4]));
+        String index=payload[5];
+
+        if(index.equals("1")){
+            // 数据库操作
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    // 查车场表
+                    Parkinglot parkinglot = DBService.getDbService().getParkinglot(parkingMessage.getParkinglotId(),parkingMessage.getZoneId());
+                    parkinglot.setParkinglotId(parkingMessage.getParkinglotId());
+                    parkinglot.setZoneId(parkingMessage.getZoneId());
+                    parkinglot.setFee(parkingMessage.getFee());
+                    parkinglot.setSpaceTotal(parkingMessage.getSpaceTotal());
+                    parkinglot.setSpaceAvailable(parkingMessage.getSpaceAvailable());
+                    // 判断是否车场是新建的，不是新建的则插入
+                    if(parkinglot.getId()==null){
+                        // 如果查询为空，则新插入数据
+                        // 插入space表
+                        DBService.getDbService().insertParkinglot(parkinglot);
+                    }else {
+                        // 车场非新建，更新或删除操作
+                        System.out.println("更新1");
+                        DBService.getDbService().updateParkinglot(parkinglot);
+                    }
+
+                }
+
+            }).start();
+
+        }
+    }
 
 }

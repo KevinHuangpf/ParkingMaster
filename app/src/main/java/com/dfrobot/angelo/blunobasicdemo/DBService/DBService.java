@@ -12,26 +12,51 @@ import java.sql.SQLException;
 import java.util.Date;
 
 public class DBService {
- 
-    private Connection conn=null; //打开数据库对象
-    private PreparedStatement ps=null;//操作整合sql语句的对象
-    private ResultSet rs=null;//查询结果的集合
- 
+
+    private Connection conn = null; //打开数据库对象
+
+    public Connection getConn() {
+        return conn;
+    }
+
+    public void setConn(Connection conn) {
+        this.conn = conn;
+    }
+
+    public PreparedStatement getPs() {
+        return ps;
+    }
+
+    public void setPs(PreparedStatement ps) {
+        this.ps = ps;
+    }
+
+    public ResultSet getRs() {
+        return rs;
+    }
+
+    public void setRs(ResultSet rs) {
+        this.rs = rs;
+    }
+
+    private PreparedStatement ps = null;//操作整合sql语句的对象
+    private ResultSet rs = null;//查询结果的集合
+
     //DBService 对象
-    public static DBService dbService=null;
+    private static DBService dbService = null;
 
     /**
      * 构造方法 私有化
      */
-    private DBService(){
+    private DBService() {
     }
- 
+
     /**
      * 获取MySQL数据库单例类对象
      */
-    public static DBService getDbService(){
-        if(dbService==null){
-            dbService=new DBService();
+    public static DBService getDbService() {
+        if (dbService == null) {
+            dbService = new DBService();
         }
         return dbService;
     }
@@ -39,25 +64,29 @@ public class DBService {
 
     /**
      * getParkinglot
+     *
      * @param parkinglotId
      * @param zoneId
      * @return
      */
-    public Parkinglot getParkinglot(int parkinglotId,int zoneId){
+    public Parkinglot getParkinglot(int parkinglotId, int zoneId) {
         //结果存放集合
         Parkinglot parkinglot = new Parkinglot();
         //MySQL 语句
-        String sql="select * from parkinglot where parkinglot_id ="+parkinglotId+" and zone_id = "+zoneId;
+        String sql = "select * from parkinglot where parkinglot_id =" + parkinglotId + " and zone_id = " + zoneId;
         //获取链接数据库对象
-        conn= DBInitialize.getConn();
+
+        conn = DBInitialize.getConn();
+
         try {
-            if(conn!=null&&(!conn.isClosed())){
-                ps= (PreparedStatement) conn.prepareStatement(sql);
-                if(ps!=null){
-                    rs= ps.executeQuery();
-                    if(rs!=null){
-                        while(rs.next()){
-                            parkinglot.setId(rs.getInt("parkinglot_id"));
+            if (conn != null && (!conn.isClosed())) {
+                ps = (PreparedStatement) conn.prepareStatement(sql);
+                if (ps != null) {
+                    rs = ps.executeQuery();
+                    if (rs != null) {
+                        while (rs.next()) {
+                            parkinglot.setId(rs.getInt("id"));
+                            parkinglot.setParkinglotId(rs.getInt("parkinglot_id"));
                             parkinglot.setZoneId(rs.getInt("zone_id"));
                             parkinglot.setFee(rs.getDouble("fee"));
                             parkinglot.setSpaceTotal(rs.getInt("parkingspace_total"));
@@ -69,55 +98,65 @@ public class DBService {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        DBInitialize.closeAll(conn,ps,rs);//关闭相关操作
+        DBInitialize.closeAll(conn, ps, rs);//关闭相关操作
         return parkinglot;
     }
 
+
+
     /**
-     * updateParkinglot
+     * updateParkingSpace
+     *
      * @param
-     * @return
      */
-    public void updateParkinglotByPAK(Parkinglot parkinglot){
+    public void updateParkinglot(Parkinglot parkinglot) {
         //MySQL 语句
-        String sql = "update parkinglot set parkingspace_available=?, gmt_modified=? where parkinglot_id="+parkinglot.getId()+" and zone_id="+parkinglot.getZoneId();
+        String sql = "update parkinglot set parkinglot_id=?, zone_id=? ,fee=?,parkingspace_total=?,parkingspace_available=?,gmt_modified=?  where parkinglot_id=" + parkinglot.getParkinglotId() + " and zone_id=" + parkinglot.getZoneId();
         //获取链接数据库对象
-        conn= DBInitialize.getConn();
+        conn = DBInitialize.getConn();
         try {
-            if(conn!=null&&(!conn.isClosed())){
-                ps= (PreparedStatement) conn.prepareStatement(sql);
-                if(ps!=null){
-                    ps.setInt(1,parkinglot.getSpaceAvailable());
+            if (conn != null && (!conn.isClosed())) {
+                ps = (PreparedStatement) conn.prepareStatement(sql);
+                if (ps != null) {
+
+                    ps.setInt(1, parkinglot.getParkinglotId());
+                    ps.setInt(2, parkinglot.getZoneId());
+                    ps.setDouble(3, parkinglot.getFee());
+                    ps.setInt(4,parkinglot.getSpaceTotal());
+                    ps.setInt(5,parkinglot.getSpaceAvailable());
                     Date date = new Date();
-                    ps.setTimestamp(2,new java.sql.Timestamp(date.getTime()));
+                    ps.setTimestamp(6, new java.sql.Timestamp(date.getTime()));
                     ps.executeUpdate();
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        DBInitialize.closeAll(conn,ps,rs);//关闭相关操作
+        DBInitialize.closeAll(conn, ps, rs);
     }
+
+
 
 
     /**
      * getParkingspaceWithSpaceIdAndLotId
+     *
      * @param
      * @return
      */
-    public ParkingSpace getParkingspaceWithSpaceIdAndLotId(int parkingspaceId,int parkinglotId){
+    public ParkingSpace getParkingspaceWithSpaceIdAndLotId(int parkingspaceId, int parkinglotId) {
         ParkingSpace parkingSpace = new ParkingSpace();
         //MySQL 语句
-        String sql="select * from parkingspace where  parkingspace_id="+parkingspaceId+" and " +"parkinglot_id="+parkinglotId;
+        String sql = "select * from parkingspace where  parkingspace_id=" + parkingspaceId + " and " + "parkinglot_id=" + parkinglotId;
         //获取链接数据库对象
-        conn= DBInitialize.getConn();
+        conn = DBInitialize.getConn();
         try {
-            if(conn!=null&&(!conn.isClosed())){
-                ps= (PreparedStatement) conn.prepareStatement(sql);
-                if(ps!=null){
-                    rs= ps.executeQuery();
-                    if(rs!=null){
-                        while(rs.next()){
+            if (conn != null && (!conn.isClosed())) {
+                ps = (PreparedStatement) conn.prepareStatement(sql);
+                if (ps != null) {
+                    rs = ps.executeQuery();
+                    if (rs != null) {
+                        while (rs.next()) {
                             parkingSpace.setId(rs.getInt("id"));
                             parkingSpace.setParkingspaceId(rs.getInt("parkingspace_id"));
                             parkingSpace.setParkinglotId(rs.getInt("parkinglot_id"));
@@ -133,37 +172,37 @@ public class DBService {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println(e);
         }
-        DBInitialize.closeAll(conn,ps,rs);
+        DBInitialize.closeAll(conn, ps, rs);
         return parkingSpace;
     }
 
 
-
-
     /**
      * insertParkingSpace
+     *
      * @param
      * @return
      */
-    public void insertParkingSpace(ParkingSpace  parkingSpace){
+    public void insertParkingSpace(ParkingSpace parkingSpace) {
         //MySQL 语句
-        String sql="insert into parkingspace(parkingspace_id,parkinglot_id,status,user_id,start_time,end_time,gmt_create,gmt_modified) values(?,?,?,?,?,?,?,?)";
+        String sql = "insert into parkingspace(parkingspace_id,parkinglot_id,status,user_id,start_time,end_time,gmt_create,gmt_modified) values(?,?,?,?,?,?,?,?)";
         //获取链接数据库对象
-        conn= DBInitialize.getConn();
+        conn = DBInitialize.getConn();
         try {
-            if(conn!=null&&(!conn.isClosed())){
-                ps= (PreparedStatement) conn.prepareStatement(sql);
-                if(ps!=null){
-                    ps.setInt(1,parkingSpace.getParkingspaceId());
-                    ps.setInt(2,parkingSpace.getParkinglotId());
-                    ps.setInt(3,parkingSpace.getStatus());
-                    ps.setInt(4,parkingSpace.getUserId());
-                    ps.setTimestamp(5,new java.sql.Timestamp(parkingSpace.getStartTime().getTime()));
-                    ps.setTimestamp(6,new java.sql.Timestamp(parkingSpace.getStartTime().getTime()));
+            if (conn != null && (!conn.isClosed())) {
+                ps = (PreparedStatement) conn.prepareStatement(sql);
+                if (ps != null) {
+                    ps.setInt(1, parkingSpace.getParkingspaceId());
+                    ps.setInt(2, parkingSpace.getParkinglotId());
+                    ps.setInt(3, parkingSpace.getStatus());
+                    ps.setInt(4, parkingSpace.getUserId());
+                    ps.setTimestamp(5, new java.sql.Timestamp(parkingSpace.getStartTime().getTime()));
+                    ps.setTimestamp(6, new java.sql.Timestamp(parkingSpace.getStartTime().getTime()));
                     Date date = new Date();
-                    ps.setTimestamp(7,new java.sql.Timestamp(date.getTime()));
-                    ps.setTimestamp(8,new java.sql.Timestamp(date.getTime()));
+                    ps.setTimestamp(7, new java.sql.Timestamp(date.getTime()));
+                    ps.setTimestamp(8, new java.sql.Timestamp(date.getTime()));
                     ps.executeUpdate();
 
                 }
@@ -171,30 +210,31 @@ public class DBService {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        DBInitialize.closeAll(conn,ps,rs);
+        DBInitialize.closeAll(conn, ps, rs);
     }
 
     /**
      * updateParkingSpace
+     *
      * @param parkingSpace
      */
-    public void updateParkingSpace(ParkingSpace  parkingSpace){
+    public void updateParkingSpace(ParkingSpace parkingSpace) {
         //MySQL 语句
-        String sql = "update parkingspace set status=?, user_id=? ,start_time=?,end_time=?,gmt_modified=?  where parkingspace_id="+parkingSpace.getParkingspaceId()+" and parkinglot_id="+parkingSpace.getParkinglotId();
+        String sql = "update parkingspace set status=?, user_id=? ,start_time=?,end_time=?,gmt_modified=?  where parkingspace_id=" + parkingSpace.getParkingspaceId() + " and parkinglot_id=" + parkingSpace.getParkinglotId();
         //获取链接数据库对象
-        conn= DBInitialize.getConn();
+        conn = DBInitialize.getConn();
         try {
-            if(conn!=null&&(!conn.isClosed())){
-                ps= (PreparedStatement) conn.prepareStatement(sql);
-                if(ps!=null){
+            if (conn != null && (!conn.isClosed())) {
+                ps = (PreparedStatement) conn.prepareStatement(sql);
+                if (ps != null) {
 
-                    ps.setInt(1,parkingSpace.getStatus());
-                    ps.setInt(2,parkingSpace.getUserId());
-                    ps.setTimestamp(3,new java.sql.Timestamp(parkingSpace.getStartTime().getTime()));
-                    ps.setTimestamp(4,new java.sql.Timestamp(parkingSpace.getEndTime().getTime()));
+                    ps.setInt(1, parkingSpace.getStatus());
+                    ps.setInt(2, parkingSpace.getUserId());
+                    ps.setTimestamp(3, new java.sql.Timestamp(parkingSpace.getStartTime().getTime()));
+                    ps.setTimestamp(4, new java.sql.Timestamp(parkingSpace.getEndTime().getTime()));
 
                     Date date = new Date();
-                    ps.setTimestamp(5,new java.sql.Timestamp(date.getTime()));
+                    ps.setTimestamp(5, new java.sql.Timestamp(date.getTime()));
 
                     ps.executeUpdate();
 
@@ -203,10 +243,38 @@ public class DBService {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        DBInitialize.closeAll(conn,ps,rs);
+        DBInitialize.closeAll(conn, ps, rs);
     }
 
 
+    /**
+     * insertParkinglot
+     *
+     * @param parkinglot
+     */
+    public void insertParkinglot(Parkinglot parkinglot) {
+        String sql = "insert into parkinglot(parkinglot_id,zone_id,fee,parkingspace_total,parkingspace_available,gmt_create,gmt_modified) values(?,?,?,?,?,?,?)";
+        conn = DBInitialize.getConn();
+        try {
+            if (conn != null && (!conn.isClosed())) {
+                ps = (PreparedStatement) conn.prepareStatement(sql);
+                if (ps != null) {
+                    ps.setInt(1, parkinglot.getParkinglotId());
+                    ps.setInt(2, parkinglot.getZoneId());
+                    ps.setDouble(3, parkinglot.getFee());
+                    ps.setInt(4, parkinglot.getSpaceTotal());
+                    ps.setInt(5, parkinglot.getSpaceAvailable());
+                    Date date = new Date();
+                    ps.setTimestamp(6, new java.sql.Timestamp(date.getTime()));
+                    ps.setTimestamp(7, new java.sql.Timestamp(date.getTime()));
+                    ps.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        DBInitialize.closeAll(conn, ps, rs);
+    }
 
 
 }
