@@ -1,2 +1,2 @@
-# ParkingMaster
-ParkingMaster for Intelligent Demonstration System
+# ParkingMaster 
+ParkingMaster Android App for Intelligent Demonstration System
