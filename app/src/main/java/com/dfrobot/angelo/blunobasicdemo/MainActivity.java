@@ -11,16 +11,26 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.dfrobot.angelo.blunobasicdemo.DBService.DBInitialize;
-import com.dfrobot.angelo.blunobasicdemo.DBService.DBService;
-import com.dfrobot.angelo.blunobasicdemo.Pojo.*;
-import com.mysql.jdbc.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
+import org.apache.http.util.EntityUtils;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 
@@ -193,10 +203,11 @@ public class MainActivity extends BlunoLibrary {
     char Preamble;
     private boolean flag1 = false;
 
+    String response="";
 
 
     @Override
-    public void onSerialReceived(byte[] bytes)   {                        // Once connection data received, this function will be called
+    public void onSerialReceived(byte[] bytes) {                        // Once connection data received, this function will be called
         // 空字节，不处理返回
         if (bytes == null) {
             return;
@@ -229,7 +240,7 @@ public class MainActivity extends BlunoLibrary {
             }
 
             //第一次分割，前导码+payload+检验值
-            String StringMSG = new String(bytesMSG);
+            final String StringMSG = new String(bytesMSG);
             System.out.println("MSG: " + StringMSG);
             final String[] StringMSG1 = StringMSG.split("\\*");
 
@@ -268,215 +279,78 @@ public class MainActivity extends BlunoLibrary {
             // 数据校验通过，可进行业务处理
             if (checkXor) {
                 //  提取消息名称
-                String nameMSG="";
+                String nameMSG = "";
                 if (StringMSG1[0].length() == 4) {
                     nameMSG = StringMSG1[0].substring(1, 4);
                 }
 
+                final String finalNameMSG = nameMSG;
+
+
+
                 // PAK业务消息处理
-                if (nameMSG.equals("PAK")) {
-                    PAK(StringMSG1);
-
-                }
-
-                // TODO: 2019/5/18 可在此添加方法写停车场的初始化
-                if(nameMSG.equals("LOT")){
-                    LOT(StringMSG1);
-                }
-
-
-
-            }
-            System.out.println("<信息结束>");
-            isMSGOK = false;
-        }
-        flag1 = false;
-    }
-
-
-
-
-
-    /**
-     * 车位状态数据处理
-     * @param StringMSG1
-     */
-    private void PAK(String[] StringMSG1){
-        // Payload提取
-        String[] payload = StringMSG1[1].split(",");
-
-        // 核对payload在业务PAK的完整性
-        boolean isPayloadSizeRight = payload.length==6; //是否是6个payload值
-
-        boolean nullInPayload = false; //是否含有空值
-        for(String payloadItem:payload){
-            if(StringUtils.isNullOrEmpty(payloadItem)){
-                nullInPayload=true;
-                break;
-            }
-        }
-
-        // payload验证失败返回
-        if((!isPayloadSizeRight)||nullInPayload){
-            Toast.makeText(MainActivity.this, "Payload in PAK verification failed!", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        // parkingMessage对象并赋值
-        final ParkingMessage  parkingMessage = new ParkingMessage();
-        parkingMessage.setZoneId(Integer.valueOf(payload[0]));
-        parkingMessage.setParkinglotId(Integer.valueOf(payload[1]));
-        parkingMessage.setParkingSpaceId(Integer.valueOf(payload[2]));
-        parkingMessage.setUserId(Integer.valueOf(payload[3]));
-        String string = payload[4];
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        try {
-            Date msgTime = sdf.parse(string);
-            parkingMessage.setMsgTime(msgTime);
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        parkingMessage.setStatus(Integer.valueOf(payload[5]));
-
-        // 数据库操作
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // 查车位和车场表
-                ParkingSpace parkingSpace = DBService.getDbService().getParkingspaceWithSpaceIdAndLotId(parkingMessage.getParkingSpaceId(),parkingMessage.getParkinglotId());
-                Parkinglot parkinglot = DBService.getDbService().getParkinglot(parkingMessage.getParkinglotId(),parkingMessage.getZoneId());
-                
-                // 判断是否车位是新建的，不是新建的则插入
-                if(parkingSpace.getId()==null){
-                    // 如果查询为空，则新插入数据
-                    // 插入space表
-                    parkingSpace.setStatus(parkingMessage.getStatus());
-                    parkingSpace.setUserId(parkingMessage.getUserId());
-                    parkingSpace.setParkingspaceId(parkingMessage.getParkingSpaceId());
-                    parkingSpace.setParkinglotId(parkingMessage.getParkinglotId());
-                    parkingSpace.setStartTime(parkingMessage.getMsgTime());
-                    DBService.getDbService().insertParkingSpace(parkingSpace);
-
-                    // 更新车场表
-                    if(parkinglot.getSpaceAvailable()!=null){
-                        int parkingspaceAvailable = parkinglot.getSpaceAvailable();
-                        parkingspaceAvailable--;
-                        parkinglot.setSpaceAvailable(parkingspaceAvailable);
-                        DBService.getDbService().updateParkinglot(parkinglot);
-                    }
-                }else {
-                    // 车位非新建，更新或删除操作
-
-                    // indexSpace存之前车位的状态
-                    int indexSpace = parkingSpace.getStatus();
-                    parkingSpace.setStatus(parkingMessage.getStatus());
-                    parkingSpace.setUserId(parkingMessage.getUserId());
-
-                    // 状态1到来，进来停车
-                    if(parkingMessage.getStatus().intValue()==1){
-                        // 更新车位表
-                        parkingSpace.setStartTime(parkingMessage.getMsgTime());
-                        DBService.getDbService().updateParkingSpace(parkingSpace);
-
-                        // 更新车场表，车位状态变化时才更新
-                        if(parkingMessage.getStatus()!=indexSpace){
-
-                            // 需要更新车库数量
-                            if(parkinglot.getSpaceAvailable()!=null){
-                                int parkingspaceAvailable = parkinglot.getSpaceAvailable();
-                                parkingspaceAvailable--;
-                                parkinglot.setSpaceAvailable(parkingspaceAvailable);
-                                DBService.getDbService().updateParkinglot(parkinglot);
+                ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
+                cachedThreadPool.execute(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        if (finalNameMSG.equals("PAK")) {
+                            try {
+                                response = getReultForHttpPost(StringMSG1[1],finalNameMSG);
+                            } catch (IOException e) {
+                                e.printStackTrace();
                             }
                         }
+
                     }
+                });
 
-                    // 状态0到来，离开车位
-                    if(parkingMessage.getStatus().intValue()==0){
-                        // 更新车位表
-                        parkingSpace.setEndTime(parkingMessage.getMsgTime());
-                        DBService.getDbService().updateParkingSpace(parkingSpace);
+                cachedThreadPool.execute(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                if (finalNameMSG.equals("LOT")) {
+                                    try {
+                                        response = getReultForHttpPost(StringMSG1[1],finalNameMSG);
 
-                        // 更新车场表，车位状态变化时才更新
-                        if(parkingMessage.getStatus()!=indexSpace){
-                            if(parkinglot.getSpaceAvailable()!=null){
-                                int parkingspaceAvailable = parkinglot.getSpaceAvailable();
-                                parkingspaceAvailable++;
-                                parkinglot.setSpaceAvailable(parkingspaceAvailable);
-                                DBService.getDbService().updateParkinglot(parkinglot);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
                             }
-                        }
-                    }
+                        });
 
 
-                }
-
-
+                System.out.println("<信息结束>");
+                isMSGOK = false;
             }
-        }).start();
+            flag1 = false;
+        }
+        System.out.println(response);
+        serialReceivedText.append(response);
+        ((ScrollView) serialReceivedText.getParent()).fullScroll(View.FOCUS_DOWN);
+
     }
-    
 
-    /**
-     * 车场状态数据处理
-     * @param StringMSG1
-     */
-    private void LOT(String[] StringMSG1){
-        // Payload提取
-        String[] payload = StringMSG1[1].split(",");
+    public String getReultForHttpPost(String msg,String method) throws ClientProtocolException, IOException {
 
-        // 核对payload在业务LOT的完整性
-        boolean isPayloadSizeRight = payload.length==6; //是否是6个payload值
+        String path="http://kevinhuang.natapp1.cc//backend/manage/"+method.toLowerCase()+".do";
+        HttpPost httpPost=new HttpPost(path);
 
-        boolean nullInPayload = false; //是否含有空值
-        for(String payloadItem:payload){
-            if(StringUtils.isNullOrEmpty(payloadItem)){
-                nullInPayload=true;
-                break;
-            }
+        List<NameValuePair> list=new ArrayList<NameValuePair>();
+        list.add(new BasicNameValuePair(method+"MSG", msg));
+
+        httpPost.setEntity(new UrlEncodedFormEntity(list, HTTP.UTF_8));
+
+        String result="";
+        HttpResponse response=new DefaultHttpClient().execute(httpPost);
+        if(response.getStatusLine().getStatusCode()==200){
+            HttpEntity entity=response.getEntity();
+            result= EntityUtils.toString(entity, HTTP.UTF_8);
         }
-        // payload验证失败返回
-        if((!isPayloadSizeRight)||nullInPayload){
-            Toast.makeText(MainActivity.this, "Payload in LOT verification failed!", Toast.LENGTH_LONG).show();
-            return;
-        }
-        // parkingMessage对象并赋值
-        final ParkingMessage  parkingMessage = new ParkingMessage();
-        parkingMessage.setZoneId(Integer.valueOf(payload[0]));
-        parkingMessage.setParkinglotId(Integer.valueOf(payload[1]));
-        parkingMessage.setFee(Double.valueOf(payload[2]));
-        parkingMessage.setSpaceTotal(Integer.valueOf(payload[3]));
-        parkingMessage.setSpaceAvailable(Integer.valueOf(payload[4]));
-        String index=payload[5];
-
-        if(index.equals("1")){
-            // 数据库操作
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    // 查车场表
-                    Parkinglot parkinglot = DBService.getDbService().getParkinglot(parkingMessage.getParkinglotId(),parkingMessage.getZoneId());
-                    parkinglot.setParkinglotId(parkingMessage.getParkinglotId());
-                    parkinglot.setZoneId(parkingMessage.getZoneId());
-                    parkinglot.setFee(parkingMessage.getFee());
-                    parkinglot.setSpaceTotal(parkingMessage.getSpaceTotal());
-                    parkinglot.setSpaceAvailable(parkingMessage.getSpaceAvailable());
-                    // 判断是否车场是新建的，不是新建的则插入
-                    if(parkinglot.getId()==null){
-                        // 如果查询为空，则新插入数据
-                        // 插入space表
-                        DBService.getDbService().insertParkinglot(parkinglot);
-                    }else {
-                        // 车场非新建，更新或删除操作
-                        System.out.println("更新1");
-                        DBService.getDbService().updateParkinglot(parkinglot);
-                    }
-
-                }
-
-            }).start();
-
-        }
+        return result;
     }
+
 
 }

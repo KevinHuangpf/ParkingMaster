@@ -19,8 +19,6 @@ package com.dfrobot.angelo.blunobasicdemo.util;
  */
 public class Utils {
 
-
-
 	/**
 	 * 异或操作
 	 * @param datas
@@ -35,4 +33,4 @@ public class Utils {
 	}
 	
 }
-  
+
